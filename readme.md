@@ -42,13 +42,13 @@ More details on the features and input variables can be found in the description
 ### Main branch
 Move to the bin directory. If you are using the main branch, run
 ~~~
-./CellDiv <# initial cells> inp.json <GPU number> 
+./CellDiv <# initial cells> inp.json <device number> 
 ~~~
 For example:
 ~~~bash
 ./CellDiv 1 inp.json 0 
 ~~~
-To start the simulation with a single cell on one GPU.
+To start the simulation with a single cell.
 
 ### multigpu branch
 
