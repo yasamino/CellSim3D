@@ -35,7 +35,7 @@ The simulator can be found in the bin directory
 
 ## Simulations
 After compiling CellSim3D, transfer the inp.json, C180C, C180N, C180NN, C180_original, C180_pentahexa, C180_scaled, C180_small files to the bin directory.
-Change the variables in the input file (inp.json) to represent your desired system and transfer that file to the bin directory as well. 
+Change the variables in the input file (inp.json) to represent your desired system. 
 
 More details on the features and input variables can be found in the description.md file.
 
