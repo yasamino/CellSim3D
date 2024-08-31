@@ -329,6 +329,10 @@ int* d_Num_shrink_Cell;
 int NumRemoveCell;
 curandState *d_rngStatesApo;
 unsigned int *d_seeds_Apo;
+bool Create_wound;
+float wound_radius;
+int Wound_creation_time;
+float divisionV_after_wound;
 
 
 bool colloidal_dynamics;
@@ -5054,16 +5058,35 @@ int main(int argc, char *argv[])
 		// ----------------------------------------- Begin Cell Death ------------	
 		if (apoptosis && !WithoutApo) {	
 
-            		
+			if (Create_wound && step > Wound_creation_time) {
+			printf(" create Wound.\n");
+
+			if (wound_radius > 0.f && wound_radius < 1.f){
+          		printf("Killing cells within %f radius\n", wound_radius);
+			Create_wound_center(Orig_No_of_C180s);
+			}
+          	
+			Create_wound = false;
+			apoptosis = false;
+			}
+
+
+			else if (!Create_wound) {
+
             		CellApoptosis<<<No_of_C180s/512 + 1, 512>>>(No_of_C180s, d_rngStatesApo, d_Apo_rate,
  					d_Growth_rate, d_squeeze_rate, d_Num_shrink_Cell);
             		
 			
 			cudaMemcpy(&num_cell_Apo,d_num_cell_Apo,sizeof(int),cudaMemcpyDeviceToHost);
+			}
+			
 			
 			if (num_cell_Apo> 0){
-			
-			
+
+				cudaMemcpy(d_cell_Apo_inds,cell_Apo_inds, MaxNoofC180s*sizeof(int) ,cudaMemcpyHostToDevice);
+				cudaMemcpy(d_cell_Apo,cell_Apo, MaxNoofC180s*sizeof(char) ,cudaMemcpyHostToDevice);
+
+
 			 	cudaMemset(d_counter, 0, sizeof(int));
 			 	
 			 	Cell_removing <<<num_cell_Apo,192>>>( No_of_C180s, num_cell_Apo, d_counter,
@@ -10441,6 +10464,89 @@ int initialize_Vel(int Orig_No_of_C180s)
   
 }
 
+
+int Create_wound_center(int Orig_No_of_C180s){
+
+			if (wound_radius > 0.f && wound_radius < 1.f){
+          	printf("Killing cells within %f radius\n", wound_radius);
+          	
+          	
+          	if( No_of_C180s> 0 ){
+          	         	
+  			CudaErrorCheck();
+          		
+              		CenterOfMass<<<No_of_C180s,256>>>(No_of_C180s,
+                       	       	           d_X, d_Y, d_Z,
+                       	               	   d_CMx, d_CMy, d_CMz);
+          
+         		cudaMemcpy(CMx, d_CMx, No_of_C180s*sizeof(float), cudaMemcpyDeviceToHost);
+         	 	cudaMemcpy(CMy, d_CMy, No_of_C180s*sizeof(float), cudaMemcpyDeviceToHost);
+         	 	cudaMemcpy(CMz, d_CMz, No_of_C180s*sizeof(float), cudaMemcpyDeviceToHost);
+		
+		}
+
+         	 float3 sysCM = make_float3(0.f, 0.f, 0.f);
+
+         	 for(int i =0; i < No_of_C180s; ++i){
+         	     	
+         	     	sysCM = sysCM + make_float3(CMx[i], CMy[i], CMz[i]);
+         	 
+         	 }
+
+           	
+           	 float sysCMxAll, sysCMyAll, sysCMzAll;
+        	 int cells_All;
+        		
+        	 MPI_Allreduce(&sysCM.x, &sysCMxAll, 1, MPI_FLOAT, MPI_SUM, cart_comm);
+        	 MPI_Allreduce(&sysCM.y, &sysCMyAll, 1, MPI_FLOAT, MPI_SUM, cart_comm);
+        	 MPI_Allreduce(&sysCM.z, &sysCMzAll, 1, MPI_FLOAT, MPI_SUM, cart_comm);
+     
+        	 MPI_Allreduce(&No_of_C180s, &cells_All, 1, MPI_INT, MPI_SUM, cart_comm);
+        
+        	 sysCM.x = sysCMxAll / cells_All;
+        	 sysCM.y = sysCMyAll / cells_All;
+        	 sysCM.z = sysCMzAll / cells_All;
+         	 	 
+          
+         	 if(rank == 0) printf("COM = (%f, %f, %f)\n", sysCM.x, sysCM.y, sysCM.z);
+
+          	 float rMax = 0;
+         	 float mags[No_of_C180s];
+          
+         	 for (int i =0; i < No_of_C180s; ++i){
+         	     
+         	     	float3 pos = make_float3(CMx[i], CMy[i], CMz[i]) - sysCM;
+         	     	mags[i] = mag(pos);
+         	     	rMax = max(rMax, mags[i]);
+         	 }
+		printf("%f \n", rMax);
+        		
+
+        	 int c = 0; 
+		
+		 for (int i = 0; i < No_of_C180s; ++i){
+              		if (mags[i] <= rMax* wound_radius){
+			printf("%d \n",i);
+			int index = num_cell_Apo++;
+			cell_Apo_inds[index] = i;
+			cell_Apo[i] = 1;
+			c++;
+			}
+
+		 else {
+			DivisionVolume[i] = divisionV_after_wound;
+		
+			}
+		}
+
+          	printf("killed %d cells \n", c);
+	  }
+	return 0;
+}
+
+
+
+
 int SecondCell(int Orig_No_of_C180s){
 
 
@@ -11612,7 +11718,10 @@ int read_json_params(const char* inpFile){
     	Apo_rate1 = apoParams["Apo_ratio"].asFloat();
     	squeeze_rate1 = -1 * apoParams["squeeze_rate"].asFloat();
     	ApoVol = apoParams["apoptosis_Vol"].asFloat();
-    	
+	Create_wound = apoParams["Create_wound"].asBool();
+	wound_radius = apoParams["wound_radius"].asFloat();
+	Wound_creation_time = apoParams["Wound_creation_time"].asInt();  
+	divisionV_after_wound = apoParams["Wound_Induced_Division_V"].asFloat(); 	
     }	
 
     Json::Value divParams = inpRoot.get("divParams", Json::nullValue);
@@ -11827,6 +11936,9 @@ int read_json_params(const char* inpFile){
     	printf("      Apoptosis ratio     = %f\n",Apo_rate1);
     	printf("      apoptosis volume    = %f\n",ApoVol);
     	printf("      squeeze rate        = %f\n",squeeze_rate1);
+	printf("      Apoptosis radius    = %f\n", wound_radius);
+	printf("      wound creation time = %d\n",Wound_creation_time);
+	printf("      Wound-induced division volume = %f\n", divisionV_after_wound);
     }
     
     
@@ -11928,6 +12040,11 @@ int read_json_params(const char* inpFile){
         return -1;
     }
 
+    if ( !(wound_radius >=0 && wound_radius <= 1) ){
+        printf("ERROR: wound_radius is not in [0, 1]\n");
+        printf("ERROR: invalid input parameter\n");
+        return -1;
+    }
 
     if (fractionOfCells > 1.0){
         printf("ERROR: Softer cell fraction is > 1\n");
