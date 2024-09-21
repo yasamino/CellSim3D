@@ -63,7 +63,8 @@ For example:
 mpirun -np 1 ./CellDiv 10 inp.json 1 1 1
 ~~~
 To start the simulation with 10 initial cells. 
-The last three inputs divide the simulation box in the x,y, and z directions and create subsystems. Each GPU will handle one subsystem, so make sure the multiplication of these three terms equals the number of processors you have specified.
+
+Note: The product of the number of sections in the x, y, and z dimensions must equal the number of processors.
 
 ## Visualization in Blender
 
