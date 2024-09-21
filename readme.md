@@ -34,21 +34,29 @@ make -j12 CellDiv to compile the simulator.
 The simulator can be found in the bin directory
 
 ## Simulations
-After compiling CellSim3D, transfer the inp.json, C180C, C180N, C180NN, C180_original, C180_pentahexa, C180_scaled, C180_small files to the bin directory.
-Change the variables in the input file (inp.json) to represent your desired system. 
 
-More details on the features and input variables can be found in the description.md file.
+After compiling `CellSim3D`, transfer the following files to the `bin` directory:
 
-### Main branch
-Move to the bin directory. If you are using the main branch, run
-~~~
-./CellDiv <# initial cells> inp.json <device number> 
-~~~
-For example:
-~~~bash
-./CellDiv 1 inp.json 0 
-~~~
-To start the simulation with a single cell.
+- `inp.json`
+- `C180C`
+- `C180N`
+- `C180NN`
+- `C180_original`
+- `C180_pentahexa`
+- `C180_scaled`
+- `C180_small`
+
+Next, update the variables in the `inp.json` file to represent your desired system. 
+
+More details on the features and input variables can be found in the `description.md` file.
+
+### Main Branch
+
+Navigate to the `bin` directory.
+If you are using the **main branch**, run the following command:
+   ~~~
+   ./CellDiv <# initial cells> inp.json <device number>
+   ~~~
 
 ### multigpu branch
 
@@ -58,29 +66,33 @@ Run
 ~~~
 mpirun -np <# processors> ./CellDiv <# initial cells> inp.json <# sections in x> <# setions in y> <# sections in z>
 ~~~
-For example:
-~~~
-mpirun -np 1 ./CellDiv 10 inp.json 1 1 1
-~~~
-To start the simulation with 10 initial cells. 
 
 Note: The product of the number of sections in the x, y, and z dimensions must equal the number of processors.
 
 ## Visualization in Blender
 
-We use Blender to view the results of the simulations. 
+To visualize the results of the simulations using Blender, follow these steps:
 
-From the bin directory, transfer the inp.xyz file you get to the scripts file. Transfer the "C180_pentahexa.csv" and "CellDiv.blend" files to the scripts folder as well. You may need to adjust the CellDiv file's camera settings to capture the whole system.
+  From the `bin` directory, copy the following files to the `scripts` folder.
+   - `inp.xyz`   
+   - `C180_pentahexa.csv`
+   - `CellDiv.blend`
 
-In the render.py file in scripts, change the module search path to the appropriate one in your system:
-~~~
+  Open the `CellDiv.blend` file in Blender and adjust the camera settings as needed to capture the entire system.
+  
+In the `render.py` file located in the `scripts` folder, update the module search path to match your system's configuration. Locate the following line:
+
+```python
 sys.path.append("/path/to/scripts")
-~~~
-after the adjustments, run the following command in the terminal while you are in the scripts directory:
-~~~
+```
+Replace `"/path/to/scripts"` with the actual path to your `scripts` folder.
+
+Open a terminal and navigate to the `scripts` directory.
+
+Execute the following command to run Blender in the background and render the results:
+```bash
 blender --background CellDiv.blend --python render.py -- inp.xyz
-~~~
-You can view your results in the inp folder.
+```
 
 
 ## Simulator Source Code Description (note: subject to change):
