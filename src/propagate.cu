@@ -32,7 +32,7 @@ __device__ float3 GetAngleForce(const float3 iPos, const float3 kPos,
     float ri_2    = mag2(iPos);
     float rk_2    = mag2(kPos);
     //if (ri_2*rk_2 - i_dot_k*i_dot_k < 0) asm("trap;");
-    float c1 = -1.0f/( sqrtf( ri_2*rk_2 - i_dot_k*i_dot_k + 1.0e-3f));
+    float c1 =  -1.0f / (sqrtf(fabsf(ri_2 * rk_2 - i_dot_k * i_dot_k) + 1.0e-3f));
 
     float c2 = i_dot_k/ri_2;
 
